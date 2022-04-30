@@ -5,10 +5,38 @@ pub struct CircularBuffer<T> {
     field: Vec<Option<T>>,
 }
 
+#[derive(Clone)]
+pub struct MyCycle<I: Clone+Iterator> {
+    cloned: I,
+    iter: I,
+    repeat: usize,
+    used: usize
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Error {
     EmptyBuffer,
     FullBuffer,
+}
+
+impl<I: Clone+Iterator> MyCycle<I> {
+    pub fn new(iter: I, repeat: usize) -> Self {
+        MyCycle { cloned: iter.clone(), iter, repeat, used: 0}
+    }
+}
+
+impl<I: Clone+Iterator> Iterator for MyCycle<I> {
+    type Item = I::Item;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.used == self.repeat { return None; }
+        let mut ret = self.iter.next();
+        if ret.is_none() {
+            self.iter = self.cloned.clone();
+            self.used += 1;
+            if self.used != self.repeat { ret = self.iter.next(); }
+        }
+        ret
+    }
 }
 
 impl<T: Clone> CircularBuffer<T> {
